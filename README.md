@@ -1,2 +1,2 @@
 # RayTracer
-A Simple Raytrace
+A Simple Raytracer
