@@ -40,7 +40,7 @@ int main(int argc, char const *argv[])
     PointLightSource l2 = PointLightSource(Vec3D(10, 10, 40), Color(255, 255, 255));
     PointLightSource l3 = PointLightSource(Vec3D(0, 0, 0), Color(255, 255, 255));
     std::vector<Sphere> scene = {s1, s2, s3};
-    std::vector<PointLightSource> lights = {l1, l2, l3};
+    std::vector<PointLightSource> lights = {l1};
 
     unsigned char image[c.height][c.width][bytesPerPixel];
     char* imageFileName = (char*) "bitmapImage.bmp";
@@ -48,16 +48,13 @@ int main(int argc, char const *argv[])
     {
         for(int j = 0; j < c.width; j++)
         {
-            std::flush(std::cout);
-            std::cout << ((float) c.width*i + j)/(c.height*c.width) * 100 << "%          " << "\r";
+            // std::flush(std::cout);
+            // std::cout << ((float) c.width*i + j)/(c.height*c.width) * 100 << "%          " << "\r";
             std::vector<Color> C = std::vector<Color>();
-            for(double m = 0; m <= 0; m+=0.5)
+            for(int k = 0; k < 10; k++)
             {
-                for(double n = 0; n <= 0; n+=0.5)
-                {
-                    Ray r = c.generateRays(i+m, j+n);
-                    C.push_back(diffuseTrace(scene, lights, r, 0));
-                }
+                Ray r = c.generateRays(i, j);
+                C.push_back(diffuseTrace(scene, lights, r, 0));
             }
             Color avg = Color();
             for(int i = 0; i < C.size(); i++)

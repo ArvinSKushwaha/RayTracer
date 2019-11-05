@@ -4,6 +4,7 @@
 #include <cstring>
 #include <array>
 #include <vector>
+#include <random>
 #include "misc_func.hpp"
 #include "objects.hpp"
 
@@ -120,7 +121,7 @@ Color diffuseTrace (std::vector<Sphere> scene, std::vector<PointLightSource> lig
     } while (i < scene.size());
     if(min == INFINITY)
     {
-        return Color();
+        return Color(100, 100, 100);
     }
     Vec3D collisionPoint3D = R.origin + R.direction * min;
     Vec3D normCollision = scene[min_index].normal(collisionPoint3D);
@@ -128,29 +129,46 @@ Color diffuseTrace (std::vector<Sphere> scene, std::vector<PointLightSource> lig
     for(int i = 0; i < lightSources.size(); i++)
     {
         double brightness = Vec3D::normalize(lightSources[i].position - scene[min_index].position) % normCollision;
-        c.r = clamp(c.r + brightness * sqrt(lightSources[i].color.r * scene[min_index].color.r), 0, 255);
-        c.g = clamp(c.g + brightness * sqrt(lightSources[i].color.g * scene[min_index].color.g), 0, 255);
-        c.b = clamp(c.b + brightness * sqrt(lightSources[i].color.b * scene[min_index].color.b), 0, 255);
+        c.r = clamp(c.r + brightness * davg(lightSources[i].color.r, scene[min_index].color.r), 0, 255);
+        c.g = clamp(c.g + brightness * davg(lightSources[i].color.g, scene[min_index].color.g), 0, 255);
+        c.b = clamp(c.b + brightness * davg(lightSources[i].color.b, scene[min_index].color.b), 0, 255);
     }
-    if(depth < BOUNCE_DEPTH)
-    {
-        Color bounce = diffuseTrace(scene, lightSources, R.reflect(normCollision, collisionPoint3D), depth + 1);
-        Ray refrRay = Ray(Infinite, Infinite);
-        if(normCollision % R.direction > 0)
-        {
-            refrRay = R.refract(normCollision, collisionPoint3D, 1, scene[min_index].n);
-        }
-        else
-        {
-            refrRay = R.refract(normCollision, collisionPoint3D, scene[min_index].n, 1);
-        }
-        if(refrRay.origin == Infinite && refrRay.direction == Infinite)
-        {
-            return Color::mixColor(bounce, c, COLOR_DECAY);
-        }
-        Color refr = diffuseTrace(scene, lightSources, refrRay, depth + 1);
-        return c; Color::mixColor(Color::mixColor(bounce, refr, scene[min_index].reflrefr), c, COLOR_DECAY);
-    }
+    // if(depth < BOUNCE_DEPTH)
+    // {
+        // Ray reflRay = R.reflect(normCollision, collisionPoint3D);
+    //     double min_dist_refl = INFINITY;
+    //     double min_index_refl;
+    //     int i = 0;
+    //     do
+    //     {
+    //         double dist = scene[i].intersectionDistance(reflRay);
+    //         min_dist_refl = (dist < min_dist_refl) ? dist : min_dist_refl;
+    //         if(min_dist_refl == dist){
+    //             min_index_refl = i;
+    //         }
+    //         i++;
+    //     } while (i < scene.size());
+    //     Ray refrRay = Ray(Infinite, Infinite);
+        // Color bounce = diffuseTrace(scene, lightSources, reflRay, depth + 1);
+    //     if(normCollision % R.direction > 0)
+    //     {
+    //         refrRay = R.refract(normCollision, collisionPoint3D, 1, scene[min_index].n);
+    //     }
+    //     else
+    //     {
+    //         refrRay = R.refract(normCollision, collisionPoint3D, scene[min_index].n, 1);
+    //     }
+    //     if(refrRay.origin == Infinite && refrRay.direction == Infinite)
+    //     {
+            // Color fin = Color::mixColor(Color::mixColor(bounce, c, scene[min_index].reflrefr), c, COLOR_DECAY);
+            // if(bounce.r == NAN){
+            //     std::cout << bounce.r << " " << bounce.g << " " << bounce.b << std::endl;
+            // }
+            // return fin;
+    //     }
+    //     Color refr = diffuseTrace(scene, lightSources, refrRay, depth + 1);
+    //     return Color::mixColor(Color::mixColor(bounce, refr, scene[min_index].reflrefr), c, COLOR_DECAY);
+    // }
     return c;
 }
 
@@ -175,8 +193,8 @@ Camera::Camera (Vec3D pos, Vec3D dir, int w, int h, double fovw_, double fovh_)
 
 Ray Camera::generateRays(int x, int y)
 {
-    double angleXZ = map(x, 0, width, -fovw/2, fovw/2);
-    double angleYZ = map(y, 0, height, -fovh/2, fovh/2);
+    double angleXZ = map(x, 0, width, -fovw/2, fovw/2) + (pow(((float) rand())/((float) RAND_MAX), 2) - 0.5) * fovw/width;
+    double angleYZ = map(y, 0, height, -fovh/2, fovh/2) + (pow(((float) rand())/((float) RAND_MAX), 2) - 0.5) * fovh/height;
     std::vector< std::vector<double> > Rx = {{1, 0, 0}, {0, cos(angleYZ), -sin(angleYZ)}, {0, sin(angleYZ), cos(angleYZ)}};
     std::vector< std::vector<double> > Ry = {{cos(angleXZ), 0, sin(angleXZ)}, {0, 1, 0}, {-sin(angleXZ), 0, cos(angleXZ)}};
 

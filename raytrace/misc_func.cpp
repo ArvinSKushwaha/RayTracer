@@ -21,3 +21,13 @@ double map(double value, double min_r1, double max_r1, double min_r2, double max
     double pc = (value - min_r1)/(max_r1 - min_r1);
     return min_r2 + pc * (max_r2 - min_r2);
 }
+
+double max(double a, double b)
+{
+    return (a < b) ? b : a;
+}
+
+double davg(double a, double b)
+{
+    return (a+b)/2.0;
+}
