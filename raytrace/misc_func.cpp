@@ -3,12 +3,13 @@
 #include <cstring>
 #include <array>
 #include <vector>
+#include <eigen3/Eigen/Core>
 #include "misc_func.hpp"
 
 // Functions not in the Namespace Raytrace
-double distanceBetween(Vec3D a, Vec3D b)
+double distanceBetween(Vec a, Vec b)
 {
-    return Vec3D::norm(a-b);
+    return (a-b).norm();
 }
 
 double clamp(double value, double min, double max)

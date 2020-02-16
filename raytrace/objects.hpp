@@ -5,48 +5,51 @@
 #include <array>
 #include <vector>
 #include "colors.hpp"
+#include <eigen3/Eigen/Core>
+
+#define Vec Eigen::Vector3d
 
 class Ray
 {
 public:
-    Vec3D origin;
-    Vec3D direction;
+    Vec origin;
+    Vec direction;
     Color color = Color(NAN, NAN, NAN);
-    Ray(Vec3D, Vec3D);
-    Ray reflect(Vec3D, Vec3D);
-    Ray refract(Vec3D, Vec3D, double n1, double n2);
+    Ray(Vec, Vec);
+    Ray reflect(Vec, Vec);
+    Ray refract(Vec, Vec, double n1, double n2);
 };
 class PointLightSource
 {
 public:
     Color color;
-    Vec3D position;
-    PointLightSource(Vec3D, Color);
+    Vec position;
+    PointLightSource(Vec, Color);
 };
 class Sphere
 {
 public:
     Color color;
-    double refl = 0;
-    double refr = 1;
+    double refl = 0.5;
+    double refr = 0;
     double n = 1.5;
-    Vec3D position;
+    Vec position;
     double radius;
-    Sphere(Vec3D, double, Color);
-    Sphere operator()(Vec3D, double, Color);
-    double distanceToSphere(Vec3D);
-    Vec3D normal(Vec3D);
+    Sphere(Vec, double, Color);
+    Sphere operator()(Vec, double, Color);
+    double distanceToSphere(Vec);
+    Vec normal(Vec);
     double intersectionDistance(Ray);
 };
 class Camera
 {
 public:
-    Vec3D position = Vec3D();
-    Vec3D direction;
+    Vec position = Vec();
+    Vec direction;
     int width, height;
     double fovw = M_PI_4, fovh = M_PI_4;
-    Camera(Vec3D, int, int);
-    Camera(Vec3D, Vec3D, int, int, double, double);
+    Camera(Vec, int, int);
+    Camera(Vec, Vec, int, int, double, double);
     Ray generateRays(int, int);
 };
 

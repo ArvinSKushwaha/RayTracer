@@ -4,10 +4,12 @@
 #include <stdio.h>
 #include <random>
 #include <thread>
+#include <eigen3/Eigen/Core>
 #include "raytrace/misc_func.hpp"
 #include "raytrace/objects.hpp"
 
-#define RAYS_PER_PIXEL 5
+#define Vec Eigen::Vector3d
+#define RAYS_PER_PIXEL 100
 
 const int bytesPerPixel = 3; /// red, green, blue
 const int fileHeaderSize = 14;
@@ -27,57 +29,70 @@ void printArray(std::array<double, 3> n)
 }
 
 // For printing out a vector of Vec3D's
-void printVectors(std::vector<Vec3D> n)
+void printVectors(std::vector<Vec> n)
 {
     for (int i = 0; i < n.size(); i++)
     {
-        std::cout << n[i].cstr() << std::endl
+        std::cout << n[i][0] << " " << n[i][1] << " " << n[i][2] << std::endl
                   << std::endl;
     }
 }
 
+Color colorPixel(int i, int j, std::vector<Sphere> scene, std::vector<PointLightSource> lights, Camera c, unsigned char *image)
+{
+    Color C;
+    Color avg;
+    for (int k = 0; k < RAYS_PER_PIXEL; k++)
+    {
+        Ray r = c.generateRays(i + ((double)rand() / RAND_MAX - 0.5), j + ((double)rand() / RAND_MAX - 0.5));
+        C = trace(scene, lights, r, 0);
+        avg.r += C.r / RAYS_PER_PIXEL;
+        avg.g += C.g / RAYS_PER_PIXEL;
+        avg.b += C.b / RAYS_PER_PIXEL;
+    }
+    return avg;
+}
+
 int main(int argc, char const *argv[])
 {
-    Camera c = Camera(Vec3D(), Vec3D(0, 0, 1), 800, 800, M_PI_4, M_PI_4);
-    Sphere s1(Vec3D(0, 0, 50), 10, Color(10, 100, 255));
-    Sphere s2(Vec3D(10, 10, 30), 5, Color(255, 0, 255));
-    Sphere s3(Vec3D(2, 0, 30), 7, Color(255, 255, 255));
-    PointLightSource l1 = PointLightSource(Vec3D(10, -10, 40), Color(255, 255, 255));
-    PointLightSource l2 = PointLightSource(Vec3D(10, 10, 40), Color(255, 255, 255));
-    PointLightSource l3 = PointLightSource(Vec3D(0, 0, 0), Color(255, 255, 255));
-    std::vector<Sphere> scene = {s1, s2, s3};
+    Camera c = Camera(Vec(0, 0, 0), Vec(0, 0, 1), 8000, 8000, M_PI_4, M_PI_4);
+    PointLightSource l1 = PointLightSource(Vec(0, 0, 0), Color(255, 255, 255));
+    std::vector<Sphere> scene = std::vector<Sphere>();
+    for (int z = 0; z < 5; ++z)
+    {
+        for (int i = -3; i <= 3; ++i)
+        {
+            for (int j = -3; j <= 3; ++j)
+            {
+                scene.push_back(Sphere(Vec(i/2.5, j/2.5, z + 6), 0.2, Color(255, 0, 0)));
+            }
+        }
+    }
     std::vector<PointLightSource> lights = {l1};
 
-    unsigned char image[c.height][c.width][bytesPerPixel];
+    unsigned char *image = (unsigned char *)calloc(sizeof(unsigned char *), c.height * c.width * bytesPerPixel);
     char *imageFileName = (char *)"bitmapImage.bmp";
-    for (int i = 0; i < c.height; i++)
+    int n = 0;
+    #pragma opt parallel
     {
-        for (int j = 0; j < c.width; j++)
+        #pragma opt for schedule(static, 4000);
+        for (int m = 0; m < c.width * c.height; ++m)
         {
+            int i = m / c.width;
+            int j = m - i * c.width;
             // std::flush(std::cout);
             // std::cout << ((float) c.width*i + j)/(c.height*c.width) * 100 << "%          " << "\r";
-            std::vector<Color> C = std::vector<Color>();
-            for (int k = 0; k < RAYS_PER_PIXEL; k++)
-            {
-                Ray r = c.generateRays(i + ((double)random() / RAND_MAX - 0.5), j + ((double)random() / RAND_MAX - 0.5));
-                C.push_back(trace(scene, lights, r, 0));
-            }
-            Color avg = Color();
-            for (int i = 0; i < C.size(); i++)
-            {
-                avg.r += C[i].r / C.size();
-                avg.g += C[i].g / C.size();
-                avg.b += C[i].b / C.size();
-            }
-            image[i][j][2] = (unsigned char)(avg.r); ///red
-            image[i][j][1] = (unsigned char)(avg.g); ///green
-            image[i][j][0] = (unsigned char)(avg.b); ///blue
+            Color avg = colorPixel(i, j, scene, lights, c, image);
+            image[(i * c.width + j) * bytesPerPixel + 2] = (unsigned char)(avg.r); ///red
+            image[(i * c.width + j) * bytesPerPixel + 1] = (unsigned char)(avg.g); ///green
+            image[(i * c.width + j) * bytesPerPixel] = (unsigned char)(avg.b);     ///blue
+            ++n;
+            std::cout << (double)n / (c.height * c.width) * 100 << "%     \r";
+            std::flush(std::cout);
         }
-        std::cout << (double)i / c.height * 100 << "%     \r";
-        std::flush(std::cout);
     }
 
-    generateBitmapImage((unsigned char *)image, c.height, c.width, imageFileName);
+    generateBitmapImage(image, c.height, c.width, imageFileName);
     printf("Image generated!!\n");
     return 0;
 }

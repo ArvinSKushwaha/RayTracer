@@ -5,7 +5,8 @@
 #include <vector>
 #include "vectors.hpp"
 
-double distanceBetween(Vec3D a, Vec3D b);
+#define Vec Eigen::Vector3d
+double distanceBetween(Vec a, Vec b);
 double clamp (double, double, double);
 double map (double, double, double, double, double);
 double max (double, double);
